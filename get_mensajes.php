@@ -2,8 +2,11 @@
 session_start(); // Reanuda la sesión para verificar si el usuario está logueado
 
 // Configuración de encabezados
-header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Origin: http://localhost:5173");
 header("Content-Type: application/json; charset=UTF-8");
+header("Access-Control-Allow-Credentials: true");
+
+
 
 // --- REEMPLAZO DEL SISTEMA DE SEGURIDAD ---
 // Verificamos si la variable de sesión 'user_logged_in' existe y es verdadera

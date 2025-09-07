@@ -19,3 +19,5 @@ yarn-error.log*
 
 # Archivos del editor
 .vscode/
+
+conexion.php

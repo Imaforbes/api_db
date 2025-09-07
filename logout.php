@@ -2,7 +2,8 @@
 session_start(); // Reanuda la sesión para poder destruirla
 
 // Configuración de encabezados
-header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Origin: http://localhost:5173");
+header("Access-Control-Allow-Credentials: true");
 header("Content-Type: application/json; charset=UTF-8");
 
 // Destruye todas las variables de sesión
