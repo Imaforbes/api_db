@@ -1,4 +1,13 @@
 <?php
+// Endurece la sesión: cookies seguras y regeneración de ID al iniciar
+session_set_cookie_params([
+    'lifetime' => 0,
+    'path' => '/',
+    'domain' => '',
+    'secure' => false, // poner true si usas HTTPS
+    'httponly' => true,
+    'samesite' => 'Lax'
+]);
 session_start(); // Inicia o reanuda una sesión
 
 include("conexion.php");
@@ -38,7 +47,8 @@ if ($result->num_rows === 1) {
     $user = $result->fetch_assoc();
     // Verificar si la contraseña coincide con el hash almacenado
     if (password_verify($password, $user['password_hash'])) {
-        // La contraseña es correcta, creamos la sesión
+        // La contraseña es correcta, creamos la sesión y regeneramos ID
+        session_regenerate_id(true);
         $_SESSION['user_logged_in'] = true;
         $_SESSION['username'] = $username;
 

@@ -1,10 +1,21 @@
 <?php
+session_set_cookie_params([
+    'lifetime' => 0,
+    'path' => '/',
+    'domain' => '',
+    'secure' => false,
+    'httponly' => true,
+    'samesite' => 'Lax'
+]);
 session_start(); // Reanuda la sesión para verificar si el usuario está logueado
 
 // Configuración de encabezados
 header("Access-Control-Allow-Origin: http://localhost:5173");
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Credentials: true");
+header("X-Content-Type-Options: nosniff");
+header("X-Frame-Options: SAMEORIGIN");
+header("Referrer-Policy: no-referrer-when-downgrade");
 
 
 

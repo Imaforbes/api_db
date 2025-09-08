@@ -2,10 +2,14 @@
 // ¡NADA PUEDE ESTAR ANTES DE ESTA LÍNEA! NI ESPACIOS, NI TEXTO.
 
 // ESTE BLOQUE ES EL PERMISO QUE NECESITA EL NAVEGADOR
-header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Origin: http://localhost:5173");
 header("Content-Type: application/json; charset=UTF-8");
-header("Access-Control-Allow-Methods: POST");
+header("Access-Control-Allow-Methods: POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
+header("Access-Control-Allow-Credentials: true");
+header("X-Content-Type-Options: nosniff");
+header("X-Frame-Options: SAMEORIGIN");
+header("Referrer-Policy: no-referrer-when-downgrade");
 
 // Manejar preflight (OPTIONS) para CORS
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -16,8 +20,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 // El resto de tu código...
 include("conexion.php");
 
-// 1. LEER EL JSON ENVIADO DESDE REACT
+// 1. LEER EL JSON ENVIADO DESDE REACT (máx 10KB)
 $json_data = file_get_contents("php://input");
+$max_length = 10 * 1024;
+if (strlen($json_data) > $max_length) {
+   http_response_code(413);
+   echo json_encode(["status" => "error", "message" => "Payload demasiado grande."]);
+   exit();
+}
 $data = json_decode($json_data);
 
 // Verificar que se recibieron datos
@@ -32,6 +42,18 @@ if (!$data || empty($data->name) || empty($data->email) || empty($data->message)
 $name = trim($data->name);
 $email = trim($data->email);
 $message = trim($data->message);
+
+// Normalización básica
+$name = substr($name, 0, 200);
+$email = substr($email, 0, 200);
+$message = substr($message, 0, 2000);
+
+// Rechazar contenido HTML potencialmente peligroso
+if ($message !== strip_tags($message)) {
+   http_response_code(400);
+   echo json_encode(["status" => "error", "message" => "El mensaje no debe contener HTML."]);
+   exit();
+}
 
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
    http_response_code(400);
