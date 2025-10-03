@@ -21,3 +21,14 @@ yarn-error.log*
 .vscode/
 
 conexion.php
+
+config/database.php
+config/email.php
+test_*.php
+debug_*.php
+setup_*.php
+create_*.php
+*.log
+uploads/*
+tmp/*
+cache/*
