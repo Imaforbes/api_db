@@ -6,7 +6,22 @@
  */
 
 // Set CORS headers FIRST, before any other output
-header('Access-Control-Allow-Origin: http://localhost:5173');
+$allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:5175',
+    'http://localhost:3000',
+    'https://www.imaforbes.com',
+    'https://imaforbes.com'
+];
+
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+if (in_array($origin, $allowedOrigins)) {
+    header("Access-Control-Allow-Origin: $origin");
+} else {
+    // Fallback for production
+    header("Access-Control-Allow-Origin: https://www.imaforbes.com");
+}
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, PATCH, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
 header('Access-Control-Allow-Credentials: true');
@@ -25,12 +40,36 @@ require_once '../auth/session.php';
 // Also set CORS headers using the handler (as backup)
 CorsHandler::setHeaders();
 
-// Check authentication
-if (!SessionManager::isAuthenticated()) {
+// Start session explicitly
+session_start();
+
+// Enhanced authentication check with debugging
+error_log("Messages API - Checking authentication...");
+error_log("Messages API - Session data: " . json_encode($_SESSION ?? []));
+error_log("Messages API - Session ID: " . session_id());
+
+// Check multiple session variables for backward compatibility
+$isAuthenticated = (
+    isset($_SESSION['admin_user_id']) ||
+    (isset($_SESSION['user_logged_in']) && $_SESSION['user_logged_in'] === true) ||
+    isset($_SESSION['admin_username'])
+);
+
+error_log("Messages API - Authentication result: " . ($isAuthenticated ? 'AUTHENTICATED' : 'NOT AUTHENTICATED'));
+
+if (!$isAuthenticated) {
+    error_log("Messages API - Authentication failed, returning 401");
+    error_log("Messages API - Available session keys: " . implode(', ', array_keys($_SESSION ?? [])));
     ApiResponse::unauthorized('Authentication required');
 }
 
 $method = $_SERVER['REQUEST_METHOD'];
+
+// Debug logging
+error_log("Messages API - Request Method: " . $method);
+error_log("Messages API - Request URI: " . ($_SERVER['REQUEST_URI'] ?? 'unknown'));
+error_log("Messages API - User Agent: " . ($_SERVER['HTTP_USER_AGENT'] ?? 'unknown'));
+
 $db = Database::getInstance();
 
 try {
@@ -45,6 +84,7 @@ try {
             handleDeleteMessage($db);
             break;
         default:
+            error_log("Messages API - Unsupported method: " . $method);
             ApiResponse::error('Method not allowed', 405);
     }
 } catch (Exception $e) {
@@ -87,7 +127,7 @@ function handleGetMessages($db)
     $total = $countStmt->fetch()['total'];
 
     // Get messages
-    $sql = "SELECT id, nombre as name, email, mensaje as message, fecha as created_at 
+    $sql = "SELECT id, nombre as name, email, mensaje as message, fecha as created_at, ip_address, user_agent 
             FROM datos 
             {$whereClause} 
             ORDER BY fecha DESC 

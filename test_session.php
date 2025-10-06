@@ -1,24 +1,83 @@
 <?php
-
 /**
- * Test Session Status
- * Check if session is working properly
+ * Test Session - Simple session test
  */
+
+// Enable error reporting
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+// Set CORS headers
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+header('Access-Control-Allow-Credentials: true');
+header('Content-Type: application/json');
+
+// Handle preflight requests
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
 
 session_start();
 
-echo "<h1>Session Test</h1>";
-echo "<p><strong>Session ID:</strong> " . session_id() . "</p>";
-echo "<p><strong>Session Status:</strong> " . (session_status() === PHP_SESSION_ACTIVE ? "Active" : "Inactive") . "</p>";
-echo "<p><strong>User Logged In:</strong> " . (isset($_SESSION['user_logged_in']) ? ($_SESSION['user_logged_in'] ? "Yes" : "No") : "Not Set") . "</p>";
-
-if (isset($_SESSION['user_logged_in']) && $_SESSION['user_logged_in']) {
-    echo "<p style='color: green;'>✅ User is logged in</p>";
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Handle login
+    $input = json_decode(file_get_contents('php://input'), true);
+    
+    if ($input && isset($input['username']) && isset($input['password'])) {
+        try {
+            require_once 'config/database.php';
+            $db = Database::getInstance();
+            
+            $username = trim($input['username']);
+            $password = $input['password'];
+            
+            // Check user
+            $stmt = $db->query("SELECT id, password_hash FROM usuarios WHERE username = ?", [$username]);
+            $user = $stmt->fetch();
+            
+            if ($user && password_verify($password, $user['password_hash'])) {
+                // Set session variables
+                $_SESSION['admin_user_id'] = $user['id'];
+                $_SESSION['admin_username'] = $username;
+                $_SESSION['admin_role'] = 'admin';
+                $_SESSION['user_logged_in'] = true;
+                $_SESSION['username'] = $username;
+                
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Login successful',
+                    'session_id' => session_id(),
+                    'session_data' => $_SESSION
+                ]);
+            } else {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Invalid credentials'
+                ]);
+            }
+        } catch (Exception $e) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Login error: ' . $e->getMessage()
+            ]);
+        }
+    } else {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Username and password required'
+        ]);
+    }
 } else {
-    echo "<p style='color: red;'>❌ User is NOT logged in</p>";
-    echo "<p>This is why messages are not showing in the dashboard.</p>";
-    echo "<p><a href='login.php'>Click here to login</a></p>";
+    // GET request - show session info
+    echo json_encode([
+        'success' => true,
+        'message' => 'Session info',
+        'session_id' => session_id(),
+        'session_status' => session_status(),
+        'session_data' => $_SESSION ?? [],
+        'cookies' => $_COOKIE ?? []
+    ]);
 }
-
-echo "<h2>All Session Data:</h2>";
-echo "<pre>" . print_r($_SESSION, true) . "</pre>";

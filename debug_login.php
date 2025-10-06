@@ -1,90 +1,131 @@
 <?php
 
 /**
- * Debug Login
- * Debug version of login to see what's causing the 500 error
+ * Debug Login Script for Hostinger
+ * This script helps debug login issues in production
  */
 
-// Enable error reporting
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+// Set CORS headers
+header('Access-Control-Allow-Origin: https://www.imaforbes.com');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, PATCH, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+header('Access-Control-Allow-Credentials: true');
+header('Content-Type: application/json');
 
-echo "<h1>Debug Login</h1>";
-echo "<style>body{font-family:Arial;margin:20px;} .success{color:green;} .error{color:red;} pre{background:#f8f8f8;padding:10px;border:1px solid #ddd;}</style>";
+// Handle preflight requests
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
 
-try {
-    echo "<h2>1. Testing includes</h2>";
+require_once 'config/database.php';
+require_once 'auth/session.php';
 
-    // Test database connection
-    echo "<p>Testing database connection...</p>";
-    require_once 'config/database.php';
-    $db = Database::getInstance();
-    echo "<p class='success'>✅ Database connected</p>";
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Test login
+    $input = json_decode(file_get_contents('php://input'), true);
 
-    // Test response classes
-    echo "<p>Testing response classes...</p>";
-    require_once 'config/response.php';
-    echo "<p class='success'>✅ Response classes loaded</p>";
+    if ($input && isset($input['username']) && isset($input['password'])) {
+        try {
+            $username = $input['username'];
+            $password = $input['password'];
 
-    // Test CORS
-    echo "<p>Testing CORS...</p>";
-    CorsHandler::setHeaders();
-    echo "<p class='success'>✅ CORS headers set</p>";
+            // Test database connection first
+            $db = Database::getInstance();
 
-    // Test session
-    echo "<p>Testing session...</p>";
-    session_start();
-    echo "<p class='success'>✅ Session started</p>";
+            // Check if user exists
+            $sql = "SELECT id, username, password_hash FROM usuarios WHERE username = ?";
+            $stmt = $db->query($sql, [$username]);
+            $user = $stmt->fetch();
 
-    // Test database query
-    echo "<h2>2. Testing database query</h2>";
-    $stmt = $db->query("SHOW TABLES LIKE 'usuarios'");
-    $tableExists = $stmt->fetch();
+            if ($user) {
+                // Check password
+                $passwordValid = password_verify($password, $user['password_hash']);
 
-    if ($tableExists) {
-        echo "<p class='success'>✅ usuarios table exists</p>";
+                if ($passwordValid) {
+                    // Start session
+                    SessionManager::startSession();
+                    $_SESSION['admin_user_id'] = $user['id'];
+                    $_SESSION['admin_username'] = $user['username'];
+                    $_SESSION['admin_role'] = 'admin';
 
-        // Test the actual query
-        $stmt = $db->prepare("SELECT password_hash FROM usuarios WHERE username = ?");
-        $stmt->execute(['admin']);
-        $user = $stmt->fetch();
-
-        if ($user) {
-            echo "<p class='success'>✅ User found in database</p>";
-            echo "<p><strong>Password hash:</strong> " . substr($user['password_hash'], 0, 20) . "...</p>";
-        } else {
-            echo "<p class='error'>❌ No user found with username 'admin'</p>";
+                    echo json_encode([
+                        'success' => true,
+                        'message' => 'Login successful',
+                        'user' => [
+                            'id' => $user['id'],
+                            'username' => $user['username'],
+                            'role' => 'admin'
+                        ],
+                        'session' => [
+                            'id' => session_id(),
+                            'data' => $_SESSION
+                        ]
+                    ]);
+                } else {
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Invalid password',
+                        'debug' => [
+                            'user_found' => true,
+                            'password_check' => false
+                        ]
+                    ]);
+                }
+            } else {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'User not found',
+                    'debug' => [
+                        'user_found' => false,
+                        'username' => $username
+                    ]
+                ]);
+            }
+        } catch (Exception $e) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Database error',
+                'error' => $e->getMessage()
+            ]);
         }
     } else {
-        echo "<p class='error'>❌ usuarios table does not exist</p>";
+        echo json_encode([
+            'success' => false,
+            'message' => 'Invalid input data'
+        ]);
     }
+} else {
+    // GET request - show debug info
+    try {
+        $db = Database::getInstance();
+        $users = $db->query("SELECT id, username FROM usuarios")->fetchAll();
 
-    // Test input validation
-    echo "<h2>3. Testing input validation</h2>";
-    $testUsername = InputValidator::sanitizeString('admin', 100);
-    echo "<p class='success'>✅ Input validation works: '$testUsername'</p>";
+        SessionManager::startSession();
 
-    // Test password verification
-    echo "<h2>4. Testing password verification</h2>";
-    $testPassword = 'admin123';
-    if ($user && password_verify($testPassword, $user['password_hash'])) {
-        echo "<p class='success'>✅ Password verification works</p>";
-    } else {
-        echo "<p class='error'>❌ Password verification failed</p>";
+        echo json_encode([
+            'success' => true,
+            'message' => 'Debug info',
+            'database' => [
+                'connected' => true,
+                'users' => $users
+            ],
+            'session' => [
+                'status' => session_status(),
+                'id' => session_id(),
+                'data' => $_SESSION ?? []
+            ],
+            'environment' => [
+                'php_version' => PHP_VERSION,
+                'server_name' => $_SERVER['SERVER_NAME'] ?? 'unknown',
+                'https' => isset($_SERVER['HTTPS']) ? 'yes' : 'no'
+            ]
+        ]);
+    } catch (Exception $e) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Database connection failed',
+            'error' => $e->getMessage()
+        ]);
     }
-
-    echo "<h2>5. Test complete</h2>";
-    echo "<p>All components are working. The 500 error might be caused by:</p>";
-    echo "<ul>";
-    echo "<li>Missing admin user in database</li>";
-    echo "<li>Incorrect password</li>";
-    echo "<li>Session issues</li>";
-    echo "</ul>";
-
-    echo "<p><a href='create_admin_user.php'>Create admin user</a></p>";
-    echo "<p><a href='test_login.php'>Test login form</a></p>";
-} catch (Exception $e) {
-    echo "<p class='error'>❌ Error: " . $e->getMessage() . "</p>";
-    echo "<p><strong>Stack trace:</strong></p>";
-    echo "<pre>" . $e->getTraceAsString() . "</pre>";
 }

@@ -91,15 +91,21 @@ class CorsHandler
     public static function setHeaders()
     {
         $allowedOrigins = [
+            'http://localhost:5173',
+            'http://localhost:5174',
+            'http://localhost:5175',
+            'http://localhost:3000',
             'https://www.imaforbes.com',
-            'https://imaforbes.com',
-            'https://imaforbes.com' // Add your production domain
+            'https://imaforbes.com'
         ];
 
         $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 
         if (in_array($origin, $allowedOrigins)) {
             header("Access-Control-Allow-Origin: $origin");
+        } else {
+            // Fallback for production
+            header("Access-Control-Allow-Origin: https://www.imaforbes.com");
         }
 
         header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, PATCH, OPTIONS');

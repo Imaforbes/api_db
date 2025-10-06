@@ -1,34 +1,128 @@
-# Dependencias
-/node_modules
+# ========================================
+# API_DB - Files to EXCLUDE from Git
+# ========================================
 
-# Archivos de build
-/dist
-/build
-
-# Archivos de logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Archivos de entorno (¡muy importante para la seguridad!)
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# Archivos del editor
-.vscode/
-
-conexion.php
-
+# 🔒 SENSITIVE CONFIGURATION FILES (CRITICAL!)
 config/database.php
 config/email.php
+conexion.php
+
+# 🧪 TESTING & DEBUG FILES
 test_*.php
 debug_*.php
 setup_*.php
 create_*.php
-*.log
+import_*.php
+check_*.php
+simple_*.php
+minimal_*.php
+complete_*.php
+fix_*.php
+
+# 📁 UPLOAD DIRECTORIES
 uploads/*
 tmp/*
 cache/*
+
+# 📝 LOG FILES
+*.log
+error_log
+access_log
+
+# 🔧 ENVIRONMENT & CONFIG FILES
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+.env.staging
+
+# 📦 DEPENDENCIES
+node_modules/
+vendor/
+composer.lock
+
+# 🛠️ IDE & EDITOR FILES
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# 🗂️ BACKUP & TEMPORARY FILES
+*.bak
+*.backup
+*.tmp
+*.temp
+
+# 📊 DATABASE BACKUPS
+*.sql
+*.dump
+*.backup
+
+# 🔐 SECURITY FILES
+*.key
+*.pem
+*.crt
+*.p12
+*.p8
+*.jks
+*.keystore
+*.p12
+*.pfx
+
+# 🔒 DATABASE CREDENTIALS & CONNECTION FILES
+config/database.php
+config/email.php
+conexion.php
+database_credentials.php
+db_config.php
+connection.php
+
+# 📧 EMAIL CONFIGURATION
+email_config.php
+smtp_config.php
+mail_settings.php
+
+# 🛡️ SESSION & AUTH FILES
+session_config.php
+auth_config.php
+jwt_secret.php
+token_config.php
+
+# 📊 SENSITIVE DATA FILES
+*.csv
+*.json
+!package.json
+!composer.json
+data/
+backups/
+exports/
+
+# 🔑 API KEYS & SECRETS
+api_keys.php
+secrets.php
+credentials.php
+.env
+.env.*
+
+# 🧪 DEVELOPMENT & TESTING FILES
+test_*.php
+debug_*.php
+setup_*.php
+create_*.php
+import_*.php
+check_*.php
+simple_*.php
+minimal_*.php
+complete_*.php
+fix_*.php
+add_*.php
+
+# 📁 UPLOAD DIRECTORIES (with sensitive content)
+uploads/*
+tmp/*
+cache/*
+temp/*

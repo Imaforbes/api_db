@@ -12,6 +12,18 @@ class SessionManager
     public static function startSession()
     {
         if (session_status() === PHP_SESSION_NONE) {
+            // Configure session settings for better security and compatibility
+            ini_set('session.cookie_httponly', 1);
+            ini_set('session.cookie_secure', isset($_SERVER['HTTPS']));
+            ini_set('session.use_only_cookies', 1);
+
+            // Set SameSite based on environment
+            if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
+                ini_set('session.cookie_samesite', 'None'); // For cross-domain HTTPS
+            } else {
+                ini_set('session.cookie_samesite', 'Lax'); // For local development
+            }
+
             session_start();
         }
     }

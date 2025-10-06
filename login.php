@@ -5,6 +5,10 @@
  * Handles admin authentication
  */
 
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 require_once 'config/database.php';
 require_once 'config/response.php';
 
@@ -49,13 +53,23 @@ try {
     $password = $input['password'];
 
     // Check if user exists and verify password
-    $stmt = $db->prepare("SELECT password_hash FROM usuarios WHERE username = ?");
-    $stmt->execute([$username]);
+    $stmt = $db->query("SELECT password_hash FROM usuarios WHERE username = ?", [$username]);
     $user = $stmt->fetch();
 
     if ($user && password_verify($password, $user['password_hash'])) {
         // Password is correct, create session
         session_regenerate_id(true);
+
+        // Get user ID for session
+        $userStmt = $db->query("SELECT id FROM usuarios WHERE username = ?", [$username]);
+        $userData = $userStmt->fetch();
+
+        // Set session variables that match SessionManager expectations
+        $_SESSION['admin_user_id'] = $userData['id'];
+        $_SESSION['admin_username'] = $username;
+        $_SESSION['admin_role'] = 'admin';
+
+        // Legacy session variables for backward compatibility
         $_SESSION['user_logged_in'] = true;
         $_SESSION['username'] = $username;
 
